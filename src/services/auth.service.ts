@@ -1,47 +1,53 @@
-import api from './api'
+import api from "./api";
 
 interface LoginPayload {
-  email: string
-  password: string
+  email: string;
+  password: string;
 }
 
 export interface User {
-  id: number
-  name: string
-  email: string
-  dni: string
-  role: string
-  status: string
-  token: string
+  id: number;
+  name: string;
+  email: string;
+  dni: string;
+  role: string;
+  status: string;
+  token: string;
 }
 
 export const login = async (payload: LoginPayload): Promise<User> => {
   try {
-    const { data } = await api.post<User>('/auth/login', payload)
+    const { data } = await api.post<User>("/auth/login", payload);
 
-    if (typeof window !== 'undefined') {
-      document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`
+    if (typeof window !== "undefined") {
+      document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
     }
 
-    return data
-  } catch (error: any) {
-    if (error.response) {
-      const status = error.response.status
+    return data;
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "response" in error) {
+      const err = error as { response: { status: number } };
+
+      const status = err.response.status;
       if (status === 401) {
-        throw new Error('Credenciales incorrectas. Verifica tu correo y contraseña.')
+        throw new Error(
+          "Credenciales incorrectas. Verifica tu correo y contraseña."
+        );
       } else if (status >= 500) {
-        throw new Error('Error del servidor. Intenta más tarde.')
+        throw new Error("Error del servidor. Intenta más tarde.");
       }
     }
-    throw new Error('No se pudo conectar al servidor. Verifica tu conexión.')
+
+    throw new Error("No se pudo conectar al servidor. Verifica tu conexión.");
   }
-}
+};
 
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    const { data } = await api.get<User>('/auth/me')
-    return data
+    const { data } = await api.get<User>("/auth/me");
+    return data;
   } catch (error) {
-    throw new Error('No autorizado o error al obtener el usuario')
+    console.error("Error al obtener el usuario:", error);
+    throw new Error("No autorizado o error al obtener el usuario");
   }
-}
+};

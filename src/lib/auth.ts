@@ -28,6 +28,7 @@ export function getUserFromRequest(req: IncomingMessage): Omit<User, 'token'> | 
       status: user.status,
     };
   } catch (err) {
+    console.error('Error al verificar el token:', err);
     return null;
   }
 }

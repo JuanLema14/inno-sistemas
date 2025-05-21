@@ -15,7 +15,7 @@ export type UserTeam = {
     teamId: number;
   };
   user: UserDTO
-  team?: any;
+  team?: TeamDTO;
   roleInGroup?: string;
 };
 
