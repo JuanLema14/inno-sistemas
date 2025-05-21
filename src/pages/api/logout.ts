@@ -9,7 +9,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
-      expires: new Date(0), // Expira la cookie
+      expires: new Date(0),
     })
   );
 

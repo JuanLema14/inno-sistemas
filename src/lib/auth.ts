@@ -2,6 +2,7 @@ import { IncomingMessage } from 'http';
 import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
 import { User } from '@/services/auth.service';
+import Cookies from "js-cookie";
 
 const JWT_SECRET =
   process.env.JWT_SECRET ||
@@ -33,7 +34,7 @@ export function getUserFromRequest(req: IncomingMessage): Omit<User, 'token'> | 
   }
 }
 
-export async function logout() {
-  await fetch('/api/logout', { method: 'POST' });
-  window.location.href = '/';
+export function logout() {
+  Cookies.remove("token");
+  window.location.href = "/";
 }

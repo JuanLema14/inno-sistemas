@@ -5,6 +5,7 @@ import { login } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/items/LoadSpinner";
 import Image from "next/image";
+import Cookies from "js-cookie";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -21,18 +22,12 @@ export default function LoginForm() {
     try {
       const response = await login({ email, password });
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          id: response.id,
-          name: response.name,
-          email: response.email,
-          dni: response.dni,
-          role: response.role,
-          status: response.status,
-        })
-      );
+      Cookies.set("token", response.token, {
+        secure: true,
+        sameSite: "Lax",
+        path: "/",
+        expires: 1,
+      });
 
       router.push("/main");
     } catch (err) {
