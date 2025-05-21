@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+.gradient {
+  @apply bg-linear-to-tr from-[#2AB6D9] to-[#33D35E];
+}
+
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+@theme {
+  --color-primary: #3260ab;
+  --color-secondary: #41c1f0;
+  --color-third: #3260ab;
+  --color-accent: #fbfbfb;
+  --color-dark: #f3edfa;
+  --color-darkest: #d1d0d0;
+}
+
+.colores {
+  --color-primary: #3260ab;
+  --color-secondary: #41c1f0;
+  --color-third: #3260ab;
+  --color-accent: #fbfbfb;
+  --color-dark: #f3edfa;
+  --color-darkest: #d1d0d0;
+}
