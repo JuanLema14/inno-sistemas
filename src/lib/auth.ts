@@ -1,6 +1,6 @@
 import { IncomingMessage } from 'http';
 import jwt from 'jsonwebtoken';
-import cookie from 'cookie';
+import * as cookie from 'cookie';
 import { User } from '@/services/auth.service';
 import Cookies from "js-cookie";
 
