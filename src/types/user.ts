@@ -3,6 +3,7 @@ export type Status = 'ACTIVE' | 'INACTIVE'
 
 export interface UserDTO {
   id: number
+  userId?: number
   name: string
   email: string
   password?: string

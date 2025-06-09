@@ -1,44 +1,50 @@
-"use client";
+"use client"
 
-import Sidebar from "../../frames/SideBar";
-import { Bell, User, LogOut } from "lucide-react";
+import Sidebar from "../../frames/SideBar"
+import { Bell, User, LogOut } from "lucide-react"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/items/ui/popover";
+} from "@/components/items/ui/popover"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/items/ui/dropdown-menu";
-import { Badge } from "@/components/items/ui/Badge";
-import { logout } from "@/lib/auth";
+} from "@/components/items/ui/dropdown-menu"
+import { Badge } from "@/components/items/ui/Badge"
+import { logout } from "@/lib/auth"
+import { useEffect, useState } from "react"
+import { getNotificationsByUserId, markNotificationAsRead } from "@/services/notification"
+import { NotificationDTO } from "@/types/notification"
 
 export default function MainLayout({
   children,
   user,
 }: {
-  children: React.ReactNode;
-  user: { name: string; email: string; role: string } | null;
+  children: React.ReactNode
+  user: { name: string; email: string; role: string; userId: number } | null
 }) {
-  const email = user?.email || "email@example.com";
+  const email = user?.email || "email@example.com"
+  const userId = user?.userId || 0
 
-  const notifications = [
-    {
-      id: 1,
-      label: "Notificación 1",
-      description: "Descripción de la notificación 1",
-      date: "2h",
-    },
-    {
-      id: 2,
-      label: "Notificación 2",
-      description: "Descripción de la notificación 2",
-      date: "1min",
-    },
-  ];
+  const [notifications, setNotifications] = useState<NotificationDTO[]>([])
+
+  const fetchNotifications = async () => {
+    const notifs = await getNotificationsByUserId()
+    setNotifications(notifs)
+  }
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [userId])
+
+  const handleMarkAllAsRead = async () => {
+    const unread = notifications.filter(n => !n.isRead)
+    await Promise.all(unread.map(n => markNotificationAsRead(n.id)))
+    fetchNotifications()
+  }
 
   return (
     <div className="min-h-screen bg-dark text-white p-4">
@@ -57,7 +63,7 @@ export default function MainLayout({
                 <PopoverTrigger asChild>
                   <button className="relative p-2 bg-accent rounded-lg hover:bg-white/10 transition hover:cursor-pointer">
                     <Bell className="h-5 w-5 text-secondary" />
-                    {notifications.length > 0 && (
+                    {notifications.some(n => !n.isRead) && (
                       <span className="absolute -top-1 -right-1">
                         <Badge className="rounded-full bg-red-500 h-2 w-2 p-0" />
                       </span>
@@ -69,21 +75,37 @@ export default function MainLayout({
                     <h2 className="text-base font-semibold text-secondary">
                       Notificaciones
                     </h2>
-                    <button className="text-sm text-primary hover:text-secondary hover:cursor-pointer">
+                    <button
+                      className="text-sm text-primary hover:text-secondary hover:cursor-pointer"
+                      onClick={handleMarkAllAsRead}
+                    >
                       Marcar todo como leído
                     </button>
                   </div>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {notifications.length === 0 && (
+                      <p className="text-sm text-secondary text-center">
+                        No tienes notificaciones
+                      </p>
+                    )}
                     {notifications.map((n) => (
-                      <div key={n.id} className="p-2 bg-secondary rounded-lg ">
+                      <div
+                        key={n.id}
+                        className={`p-2 rounded-lg ${
+                          n.isRead ? "bg-secondary/30" : "bg-secondary"
+                        }`}
+                      >
                         <div className="flex justify-between items-center">
                           <div>
-                            <p className="font-medium">{n.label}</p>
-                            <p className="text-sm text-white">
-                              {n.description}
-                            </p>
+                            <p className="font-medium">{n.type}</p>
+                            <p className="text-sm text-white">{n.message}</p>
                           </div>
-                          <span className="text-xs text-white">{n.date}</span>
+                          <span className="text-xs text-white">
+                            {new Date(n.createdAt).toLocaleTimeString("es-ES", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -116,5 +138,5 @@ export default function MainLayout({
         </div>
       </div>
     </div>
-  );
+  )
 }

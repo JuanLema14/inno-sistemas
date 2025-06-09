@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ProjectDTO, getProjectById } from "@/services/project.service";
-import { TeamDTO, getTeamsByProject } from "@/services/team.service";
-import { User, getCurrentUser } from "@/services/auth.service";
-import { PlusCircle, ArrowLeft } from "lucide-react";
+import { PlusCircle, ArrowLeft, Settings } from "lucide-react";
 import CreateTaskModal from "@/components/frames/modals/CreateTaskModal";
+import CreateTeamModal from "@/components/frames/modals/CreateTeamModal";
+import ManageTeam from "@/components/frames/ManageTeam";
+import { TaskDTO } from "@/types/task";
+import { useState } from "react";
 
+import { useProjectData } from "@/hooks/useProjectData";
+import { useFilteredTasks } from "@/hooks/useFilteredTasks";
 import { GetServerSideProps } from "next";
 import { getUserFromRequest } from "@/lib/auth";
-
-import { Settings } from "lucide-react";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const user = getUserFromRequest(context.req);
@@ -32,74 +32,35 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
-import CreateTeamModal from "@/components/frames/modals/CreateTeamModal";
-import ManageTeam from "@/components/frames/ManageTeam";
-import { TaskDTO } from "@/types/task";
-import { getTasksByProject } from "@/services/task.service";
-
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params?.id;
+  const projectId = Number(params?.id);
 
-  const projectId = Number(id);
-  const [project, setProject] = useState<ProjectDTO | null>(null);
-  const [team, setTeam] = useState<TeamDTO | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [showManageTeam, setShowManageTeam] = useState(false);
+  const { user, project, team, tasks, isLoading, error, setTasks, setTeam } =
+    useProjectData(projectId);
 
-  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
-
-  const [tasks, setTasks] = useState<TaskDTO[]>([]);
   const [filterName, setFilterName] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const filteredTasks = useFilteredTasks(tasks, filterName, filterStatus);
 
-  useEffect(() => {
-    if (!projectId) return;
-
-    const fetchData = async () => {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-
-      const fetchedProject = await getProjectById(projectId);
-      setProject(fetchedProject);
-
-      const teams = await getTeamsByProject(projectId);
-      if (teams.length > 0) {
-        setTeam(teams[0]);
-      }
-
-      const fetchedTasks = await getTasksByProject(projectId);
-      setTasks(fetchedTasks);
-    };
-
-    fetchData();
-  }, [projectId]);
+  const [showModal, setShowModal] = useState(false);
+  const [showManageTeam, setShowManageTeam] = useState(false);
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
 
   const handleOpenCreateTaskModal = () => {
     setShowCreateTaskModal(true);
   };
 
   const handleTaskCreated = (newTask: TaskDTO) => {
-    setTasks((prevTasks) => [newTask, ...prevTasks]);
+    setTasks((prev) => [newTask, ...prev]);
   };
-
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      const matchesName = task.name
-        .toLowerCase()
-        .includes(filterName.toLowerCase());
-      const matchesStatus = filterStatus ? task.status === filterStatus : true;
-      return matchesName && matchesStatus;
-    });
-  }, [tasks, filterName, filterStatus]);
 
   const handleCreateTeamClick = () => {
     setShowModal(true);
   };
 
-  const handleTeamCreated = (newTeam: TeamDTO) => {
+  const handleTeamCreated = (newTeam: typeof team) => {
     setTeam(newTeam);
   };
 
@@ -107,7 +68,42 @@ export default function ProjectDetailPage() {
     router.back();
   };
 
-  if (!project) return <p className="text-secondary">Cargando proyecto...</p>;
+  // Puedes poner esto arriba del componente principal o en un archivo aparte
+  const PriorityBadge = ({ priority }: { priority: string }) => {
+    let color = "bg-gray-200 text-gray-700";
+    let label = priority;
+
+    switch (priority) {
+      case "LOW":
+        color = "bg-green-100 text-green-700 border border-green-400";
+        label = "Baja";
+        break;
+      case "MEDIUM":
+        color = "bg-yellow-100 text-yellow-700 border border-yellow-400";
+        label = "Media";
+        break;
+      case "HIGH":
+        color = "bg-red-100 text-red-700 border border-red-400";
+        label = "Alta";
+        break;
+      default:
+        label = priority;
+    }
+
+    return (
+      <span
+        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${color}`}
+      >
+        {label}
+      </span>
+    );
+  };
+
+  if (isLoading)
+    return <p className="text-secondary">Cargando proyecto y datos...</p>;
+  if (error) return <p className="text-red-600">Error: {error}</p>;
+  if (!project)
+    return <p className="text-secondary">Proyecto no encontrado.</p>;
 
   return (
     <div className="p-6 bg-white rounded-2xl shadow-md w-full mx-auto">
@@ -239,12 +235,6 @@ export default function ProjectDetailPage() {
                     Descripción
                   </th>
                   <th className="px-4 py-3 font-medium text-gray-900">
-                    Fecha límite
-                  </th>
-                  <th className="px-4 py-3 font-medium text-gray-900">
-                    Estado
-                  </th>
-                  <th className="px-4 py-3 font-medium text-gray-900">
                     Prioridad
                   </th>
                 </tr>
@@ -252,33 +242,21 @@ export default function ProjectDetailPage() {
               <tbody>
                 {filteredTasks.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-3 text-center text-gray-500"
-                    >
-                      No se encontraron tareas
+                    <td colSpan={4} className="text-center py-4 text-gray-400">
+                      No se encontraron tareas.
                     </td>
                   </tr>
                 ) : (
                   filteredTasks.map((task) => (
-                    <tr key={task.id} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {task.name}
-                      </td>
-                      <td
-                        className="px-4 py-3 truncate max-w-xs"
-                        title={task.description}
-                      >
-                        {task.description}
-                      </td>
+                    <tr
+                      key={task.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+                      onClick={() => router.push(`/main/tasks/${task.id}`)}
+                    >
+                      <td className="px-4 py-3">{task.name}</td>
+                      <td className="px-4 py-3">{task.description}</td>
                       <td className="px-4 py-3">
-                        {new Date(task.dueDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 capitalize">
-                        {task.status.replace("_", " ").toLowerCase()}
-                      </td>
-                      <td className="px-4 py-3 capitalize">
-                        {task.priority.toLowerCase()}
+                        <PriorityBadge priority={task.priority} />
                       </td>
                     </tr>
                   ))

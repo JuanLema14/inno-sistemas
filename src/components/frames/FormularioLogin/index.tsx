@@ -42,7 +42,7 @@ export default function LoginForm() {
     <div className="w-full max-w-md">
       {/* Logo y "sistemas" */}
       <div className="flex items-center justify-center mb-8 gap-3">
-        <Image src="/img/logo.png" alt="Logo" className="h-12 w-auto" />
+        <Image src="/img/logo.png" alt="Logo" width={300} height={300} className="h-12 w-auto" />
         <span className="font-bold text-2xl text-primary">sistemas</span>
       </div>
 
