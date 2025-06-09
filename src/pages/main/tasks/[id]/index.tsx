@@ -46,7 +46,6 @@ export default function TaskView() {
   const projectId = task?.projectId ?? null;
   const {
     team,
-    user: projectUser,
     isLoading: projectLoading,
   } = useProjectData(projectId ?? 0);
 
@@ -75,6 +74,7 @@ export default function TaskView() {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRemoveUser = async (_taskId: number, _userId: number) => {};
 
   useEffect(() => {
@@ -91,7 +91,6 @@ export default function TaskView() {
       .finally(() => setIsLoading(false));
   }, [id]);
 
-  const isCreator = user && task && user.id === task.createdById;
   const isTeacher = user?.role === "TEACHER";
 
   const [submissions, setSubmissions] = useState<SubmissionResponseDTO[]>([]);
